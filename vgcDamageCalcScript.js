@@ -34,6 +34,8 @@ atkPaste.forEach((atkPoke) => {
         }),
         new Move(gen, move),
       );
+      // const rawDesc = result.rawDesc;
+      // console.log(rawDesc);
       console.log(atkPoke.name + " vs " + defPoke.name + " " + move + " damage: " + Object.values(result["damage"]));
     })
   })
@@ -41,9 +43,11 @@ atkPaste.forEach((atkPoke) => {
 
 /*
 TO DO:
+- Review Showdown calc damage formulation to see if I can get any of the below tasks completed using that
 - Update message to similar format as other damage calcs
 - Find way to calculate OHKO chance
 - Find a way to set it to double battles account for double battles
   - Iterate over damage calcs for each Pokemon accounting for each partner Pokemon
 - Output final data to a document of some sort
+- Create a simple UI to update the Field attribute
 */
