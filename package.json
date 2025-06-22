@@ -10,6 +10,7 @@
   "author": "Jordan Guy",
   "license": "ISC",
   "dependencies": {
+    "@smogon/calc": "^0.10.0",
     "cheerio": "^1.1.0",
     "node-fetch": "^3.3.2"
   }
