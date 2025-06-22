@@ -1,5 +1,6 @@
 import {calculate, Generations, Pokemon, Move, Field} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
+import { getKOChance } from '@smogon/calc/dist/desc.js';
 
 // Moves need to be fixed
 
@@ -12,9 +13,7 @@ atkPaste.forEach((atkPoke) => {
   const moves = atkPoke.moves
   defPaste.forEach((defPoke) => {
     moves.forEach((move) => {
-      const result = calculate(
-        gen,
-        new Pokemon(gen, atkPoke.name, {
+      const atkPokemon = new Pokemon(gen, atkPoke.name, {
           level: 50,
           item: atkPoke.item,
           nature: atkPoke.nature,
@@ -22,8 +21,8 @@ atkPaste.forEach((atkPoke) => {
           teraType: atkPoke.tera,
           ivs: atkPoke.IVs,
           evs: atkPoke.EVs,
-        }),
-        new Pokemon(gen, defPoke.name, {
+        });
+      const defPokemon = new Pokemon(gen, defPoke.name, {
           level: 50,
           item: defPoke.item,
           nature: defPoke.nature,
@@ -31,11 +30,22 @@ atkPaste.forEach((atkPoke) => {
           teraType: defPoke.tera,
           ivs: defPoke.IVs,
           evs: defPoke.EVs,
-        }),
-        new Move(gen, move),
+        });
+      const atkMove = new Move(gen, move)
+      const result = calculate(
+        gen,
+        atkPokemon,
+        defPokemon,
+        atkMove,
       );
       if (result["move"]["category"] != "Status") {
-        damageDescription(result);
+        if (result.damage != 0) {
+          damageDescription(result);
+          const koChance = getKOChance(gen, atkPokemon, defPokemon, atkMove, new Field({defenderSide: {isLightScreen: false}}), result.damage);
+          console.log(koChance);
+        } else {
+          console.log("This move does no damage!");
+        }
       }
     })
   })
