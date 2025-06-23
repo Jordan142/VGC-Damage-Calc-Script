@@ -1,30 +1,48 @@
 import {calculate, Generations, Pokemon, Move, Field} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
 import { display } from '@smogon/calc/dist/desc.js';
-import readline from 'node:readline';
+import { input } from '@inquirer/prompts';
 
-const atkPaste = await fetchTeamData("https://pokepast.es/53a0c693aa5453e3");
+/* Example pastes:
+https://pokepast.es/53a0c693aa5453e3
+https://pokepast.es/cf23c1115b55728f
+*/
 
-const defPaste = await fetchTeamData("https://pokepast.es/cf23c1115b55728f");
+/*
+TO DO:
+- Iterate over damage calcs for each Pokemon accounting for each partner Pokemon as a bonus
+- Output final data to a document of some sort
+- Create a simple UI to update the Field attribute
+*/
 
-var atkTera;
-var defTera;
+const userPaste = await input({message:"Which team are you using? (Pokepaste link):"});
+if (!userPaste.includes("pokepast.es")) {
+  console.log("This is not a valid paste. Please run this again with a valid link.");
+  process.exit();
+}
+const oppPaste = await input({message:"What is the opposition paste? (Pokepaste link):"});
+if (!oppPaste.includes("pokepast.es")) {
+  console.log("This is not a valid paste. Please run this again with a valid link.");
+  process.exit();
+}
+const whichPaste = await input({message:"Are you wanting attacking or defenseive calcs? (atk/def), Attack is the default:"});
 
-// const r1 = readline.createInterface({
-//   input: process.stdin,
-//   output: process.stdout,
-//   prompt: '> '
-// });
+var atkPaste;
+var defPaste;
 
-// r1.question("Do you want to show additional damage calcs where your attackers are tera'd? (y/n)", (answer) => {
-//   atkTera = answer.toLowerCase();
-//   r1.close();
-// });
+if (whichPaste.toLowerCase().includes("def")) {
+  atkPaste = await fetchTeamData(oppPaste);
+  defPaste = await fetchTeamData(userPaste);
+} else {
+  atkPaste = await fetchTeamData(userPaste);
+  defPaste = await fetchTeamData(oppPaste);
+}
 
-// r1.question("Do you want to show additional damage calcs where the opposition Pokemon are tera'd? (y/n)", (answer) => {
-//   defTera = answer.toLowerCase();
-//   r1.close();
-// });
+const atkTeraQuestion = await input({message:"Do you want to show additional damage calcs where your attackers are tera'd? (y/n):"});
+const defTeraQuestion = await input({message:"Do you want to show additional damage calcs where the opposition Pokemon are tera'd? (y/n):"});
+
+const atkTera = atkTeraQuestion.toLowerCase();
+const defTera = defTeraQuestion.toLowerCase();
 
 const gen = Generations.get(9);
 atkPaste.forEach((atkPoke) => {
@@ -32,45 +50,29 @@ atkPaste.forEach((atkPoke) => {
   defPaste.forEach((defPoke) => {
     moves.forEach((move) => {
       var field = new Field(
-        { gameType: 'Doubles'}
+        { gameType: 'Doubles' }
       );
-      if (atkTera == "y" || atkTera == "yes") {
-        if (defTera == "y" || defTera == "yes") {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no");
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no");
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes");
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "yes");
+      if (atkTera.toLowerCase() == "y" || atkTera.toLowerCase() == "yes") {
+        if (defTera.toLowerCase() == "y" || defTera.toLowerCase() == "yes") {
+          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no"); // Atk tera
+          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "yes"); // Atk & Def tera
         } else {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no");
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no");
+          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no"); // Atk tera
         }
       } else {
-        if (defTera == "y" || defTera == "yes") {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes");
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes");
+        if (defTera.toLowerCase() == "y" || defTera.toLowerCase() == "yes") {
+          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
         } else {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no");
+          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
         }
       }
-      // if (result["move"]["category"] != "Status") {
-      //   if (result.damage != 0) {
-      //     const description = display(gen, atkPokemon, defPokemon, atkMove, field, result.damage, result.rawDesc)
-      //     console.log(description);
-      //   } else {
-      //     console.log("This move does no damage!");
-      //   }
-      // }
     });
   });
 });
-
-/*
-TO DO:
-- Add user input for tera check
-- Iterate over damage calcs for each Pokemon accounting for each partner Pokemon as a bonus
-- Output final data to a document of some sort
-- Create a simple UI to update the Field attribute
-*/
 
 function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, defTeraCheck) {
   var atkPokemon;
@@ -129,7 +131,7 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       const description = display(gen, atkPokemon, defPokemon, atkMove, field, result.damage, result.rawDesc);
       console.log(description);
     } else {
-      console.log("This move does no damage!");
+      console.log(atkMove.name + " does no damage!");
     }
   }
 }

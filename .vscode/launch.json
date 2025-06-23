@@ -12,7 +12,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\vgcDamageCalcScript.js"
+            "program": "${workspaceFolder}\\vgcDamageCalcScript.js",
+            "console": "integratedTerminal"
         }
     ]
 }
