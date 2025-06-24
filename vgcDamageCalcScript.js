@@ -2,6 +2,8 @@ import {calculate, Generations, Pokemon, Move, Field} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
 import { display } from '@smogon/calc/dist/desc.js';
 import { input } from '@inquirer/prompts';
+import * as fs from "fs";
+import { Document, Packer, Paragraph, TextRun } from "docx";
 
 /* Example pastes:
 https://pokepast.es/53a0c693aa5453e3
@@ -11,8 +13,8 @@ https://pokepast.es/cf23c1115b55728f
 /*
 TO DO:
 - Iterate over damage calcs for each Pokemon accounting for each partner Pokemon as a bonus
-- Output final data to a document of some sort
-- Create a simple UI to update the Field attribute
+- Improve formatting of output doc
+- Create a simple UI to update the Field attribute (low priority)
 */
 
 const userPaste = await input({message:"Which team are you using? (Pokepaste link):"});
@@ -38,40 +40,86 @@ if (whichPaste.toLowerCase().includes("def")) {
   defPaste = await fetchTeamData(oppPaste);
 }
 
-const atkTeraQuestion = await input({message:"Do you want to show additional damage calcs where your attackers are tera'd? (y/n):"});
-const defTeraQuestion = await input({message:"Do you want to show additional damage calcs where the opposition Pokemon are tera'd? (y/n):"});
+const atkTeraQuestion = await input({message:"Do you want to show additional damage calcs where your attackers are tera'd? (y/n), n is the default:"});
+const defTeraQuestion = await input({message:"Do you want to show additional damage calcs where the opposition Pokemon are tera'd? (y/n), n is the default:"});
 
 const atkTera = atkTeraQuestion.toLowerCase();
 const defTera = defTeraQuestion.toLowerCase();
 
 const gen = Generations.get(9);
+
+var sectionArray = [];
 atkPaste.forEach((atkPoke) => {
   const moves = atkPoke.moves
   defPaste.forEach((defPoke) => {
+    var damageDescArray = []
     moves.forEach((move) => {
       var field = new Field(
         { gameType: 'Doubles' }
       );
+      var moveDesc;
       if (atkTera.toLowerCase() == "y" || atkTera.toLowerCase() == "yes") {
         if (defTera.toLowerCase() == "y" || defTera.toLowerCase() == "yes") {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no"); // Atk tera
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "yes"); // Atk & Def tera
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no") // Atk tera
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "yes") // Atk & Def tera
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
         } else {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
-          battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no"); // Atk tera
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no") // Atk tera
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
         }
       } else {
         if (defTera.toLowerCase() == "y" || defTera.toLowerCase() == "yes") {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
         } else {
-          battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (moveDesc != undefined) {
+            damageDescArray.push(moveDesc);
+          }
         }
       }
     });
+    var childrenArray = {children: [new TextRun({text: atkPoke.name + " vs. " + defPoke.name, bold: true, break: 1})]}
+    damageDescArray.forEach((calc) => {
+      childrenArray.children.push(new TextRun({text: calc, break: 1}));
+    })
+    var paragraph = new Paragraph(childrenArray);
+    sectionArray.push({children: [paragraph]});
   });
+});
+
+const doc = new Document({
+  title: "Test Doc",
+  sections: sectionArray,
+});
+
+Packer.toBuffer(doc).then((buffer) => {
+    fs.writeFileSync("testDoc.docx", buffer);
 });
 
 function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, defTeraCheck) {
@@ -130,8 +178,10 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
     if (result.damage != 0) {
       const description = display(gen, atkPokemon, defPokemon, atkMove, field, result.damage, result.rawDesc);
       console.log(description);
+      return description;
     } else {
       console.log(atkMove.name + " does no damage!");
+      return atkMove.name + " does no damage!";
     }
   }
 }
