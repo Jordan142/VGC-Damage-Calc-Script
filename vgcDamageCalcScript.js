@@ -119,9 +119,16 @@ while (docName == undefined || docName == "") {
   docName = await input({message:"What do you want to name the calc document?:"});
 }
 
-Packer.toBuffer(doc).then((buffer) => {
-    fs.writeFileSync(docName + ".docx", buffer);
-});
+if (fs.existsSync("generatedDocs\\")) {
+  Packer.toBuffer(doc).then((buffer) => {
+    fs.writeFileSync("generatedDocs\\" + docName + ".docx", buffer);
+  });
+} else {
+  fs.mkdirSync("generatedDocs");
+  Packer.toBuffer(doc).then((buffer) => {
+    fs.writeFileSync("generatedDocs\\" + docName + ".docx", buffer);
+  });
+}
 
 function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, defTeraCheck) {
   var atkPokemon;
