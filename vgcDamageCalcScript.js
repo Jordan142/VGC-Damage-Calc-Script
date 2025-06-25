@@ -3,18 +3,11 @@ import fetchTeamData from './convertSDPaste.js';
 import { display } from '@smogon/calc/dist/desc.js';
 import { input } from '@inquirer/prompts';
 import * as fs from "fs";
-import { Document, Packer, Paragraph, TextRun } from "docx";
+import { Document, Packer, Paragraph, TextRun, UnderlineType } from "docx";
 
 /* Example pastes:
 https://pokepast.es/53a0c693aa5453e3
 https://pokepast.es/cf23c1115b55728f
-*/
-
-/*
-TO DO:
-- Iterate over damage calcs for each Pokemon accounting for each partner Pokemon as a bonus
-- Improve formatting of output doc
-- Create a simple UI to update the Field attribute (low priority)
 */
 
 const userPaste = await input({message:"Which team are you using? (Pokepaste link):"});
@@ -51,6 +44,7 @@ const gen = Generations.get(9);
 var sectionArray = [];
 atkPaste.forEach((atkPoke) => {
   const moves = atkPoke.moves
+  var childrenArray = {children: []};
   defPaste.forEach((defPoke) => {
     var damageDescArray = []
     moves.forEach((move) => {
@@ -104,13 +98,14 @@ atkPaste.forEach((atkPoke) => {
         }
       }
     });
-    var childrenArray = {children: [new TextRun({text: atkPoke.name + " vs. " + defPoke.name, bold: true, break: 1})]}
+    childrenArray.children.push(new TextRun({text: atkPoke.name + " vs. " + defPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})) // Font size is in half point, so size: 32 = 16 in Word
     damageDescArray.forEach((calc) => {
-      childrenArray.children.push(new TextRun({text: calc, break: 1}));
+      childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
     })
-    var paragraph = new Paragraph(childrenArray);
-    sectionArray.push({children: [paragraph]});
+    childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
   });
+  var paragraph = new Paragraph(childrenArray);
+  sectionArray.push({children: [paragraph]});
 });
 
 const doc = new Document({
@@ -118,8 +113,14 @@ const doc = new Document({
   sections: sectionArray,
 });
 
+var docName = await input({message:"What do you want to name the calc document? (Naming the document the same as another document will overwrite the original document):"});
+while (docName == undefined || docName == "") {
+  console.log("This is not a valid paste. Please enter a valid name for the document.");
+  docName = await input({message:"What do you want to name the calc document?:"});
+}
+
 Packer.toBuffer(doc).then((buffer) => {
-    fs.writeFileSync("testDoc.docx", buffer);
+    fs.writeFileSync(docName + ".docx", buffer);
 });
 
 function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, defTeraCheck) {
