@@ -22,9 +22,6 @@ if (!oppPasteQuestion.includes("pokepast.es")) {
 }
 const whichPaste = await input({message:"Are you wanting attacking or defenseive calcs? (atk/def), Attack is the default:"});
 
-var atkPaste;
-var defPaste;
-
 const userPaste = await fetchTeamData(userPasteQuestion);
 const oppPaste = await fetchTeamData(oppPasteQuestion);
 
