@@ -10,13 +10,13 @@ https://pokepast.es/53a0c693aa5453e3
 https://pokepast.es/cf23c1115b55728f
 */
 
-const userPaste = await input({message:"Which team are you using? (Pokepaste link):"});
-if (!userPaste.includes("pokepast.es")) {
+const userPasteQuestion = await input({message:"Which team are you using? (Pokepaste link):"});
+if (!userPasteQuestion.includes("pokepast.es")) {
   console.log("This is not a valid paste. Please run this again with a valid link.");
   process.exit();
 }
-const oppPaste = await input({message:"What is the opposition paste? (Pokepaste link):"});
-if (!oppPaste.includes("pokepast.es")) {
+const oppPasteQuestion = await input({message:"What is the opposition paste? (Pokepaste link):"});
+if (!oppPasteQuestion.includes("pokepast.es")) {
   console.log("This is not a valid paste. Please run this again with a valid link.");
   process.exit();
 }
@@ -25,13 +25,8 @@ const whichPaste = await input({message:"Are you wanting attacking or defenseive
 var atkPaste;
 var defPaste;
 
-if (whichPaste.toLowerCase().includes("def")) {
-  atkPaste = await fetchTeamData(oppPaste);
-  defPaste = await fetchTeamData(userPaste);
-} else {
-  atkPaste = await fetchTeamData(userPaste);
-  defPaste = await fetchTeamData(oppPaste);
-}
+const userPaste = await fetchTeamData(userPasteQuestion);
+const oppPaste = await fetchTeamData(oppPasteQuestion);
 
 const atkTeraQuestion = await input({message:"Do you want to show additional damage calcs where your attackers are tera'd? (y/n), n is the default:"});
 const defTeraQuestion = await input({message:"Do you want to show additional damage calcs where the opposition Pokemon are tera'd? (y/n), n is the default:"});
@@ -42,11 +37,17 @@ const defTera = defTeraQuestion.toLowerCase();
 const gen = Generations.get(9);
 
 var sectionArray = [];
-atkPaste.forEach((atkPoke) => {
-  const moves = atkPoke.moves
+var moves;
+userPaste.forEach((atkPoke) => {
+  if (!whichPaste.toLowerCase().includes("def")) {
+    moves = atkPoke.moves
+  }
   var childrenArray = {children: []};
-  defPaste.forEach((defPoke) => {
+  oppPaste.forEach((defPoke) => {
     var damageDescArray = []
+    if (whichPaste.toLowerCase().includes("def")) {
+      moves = defPoke.moves
+    }
     moves.forEach((move) => {
       var field = new Field(
         { gameType: 'Doubles' }
@@ -54,51 +55,91 @@ atkPaste.forEach((atkPoke) => {
       var moveDesc;
       if (atkTera.toLowerCase() == "y" || atkTera.toLowerCase() == "yes") {
         if (defTera.toLowerCase() == "y" || defTera.toLowerCase() == "yes") {
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "no", "no"); // Standard calc
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no") // Atk tera
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "yes", "no") // Atk tera
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no") // Atk tera
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "no", "yes"); // Def tera
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "yes") // Atk & Def tera
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "yes", "yes") // Atk & Def tera
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "yes") // Atk & Def tera
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
         } else {
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "no", "no"); // Standard calc
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no") // Atk tera
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "yes", "no") // Atk tera
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "yes", "no") // Atk tera
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
         }
       } else {
         if (defTera.toLowerCase() == "y" || defTera.toLowerCase() == "yes") {
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "no", "no"); // Standard calc
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "no", "yes"); // Def tera
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "yes"); // Def tera
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
         } else {
-          moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          if (whichPaste.toLowerCase().includes("def")) {
+            moveDesc = battleConstructor(gen, defPoke, atkPoke, move, field, "no", "no"); // Standard calc
+          } else {
+            moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "no", "no"); // Standard calc
+          }
           if (moveDesc != undefined) {
             damageDescArray.push(moveDesc);
           }
         }
       }
     });
-    childrenArray.children.push(new TextRun({text: atkPoke.name + " vs. " + defPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})) // Font size is in half point, so size: 32 = 16 in Word
+    if (whichPaste.toLowerCase().includes("def")) {
+      childrenArray.children.push(new TextRun({text: atkPoke.name + " (def) vs. (atk) " + defPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})) // Font size is in half point, so size: 32 = 16 in Word
+    } else {
+      childrenArray.children.push(new TextRun({text: atkPoke.name + " (atk) vs. (def) " + defPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})) // Font size is in half point, so size: 32 = 16 in Word
+    }
     damageDescArray.forEach((calc) => {
       childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
     })
