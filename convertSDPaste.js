@@ -26,7 +26,7 @@ const fixSpecialChars = (name) => {
 // Correct the Tera type string
 const correctTeraType = (text) => {
     const teraExceptions = ["normal", "fighting", "flying", "poison", "ground", "rock", "bug", "ghost", "steel",
-                            "fire", "water", "grass", "electric", "psychic", "ice", "dragon", "dark", "fairy", "stellar"];
+                            "fire", "water", "grass", "electric", "psychic", "ice", "dragon", "dark", "fairy", "stellar", "Stellar"];
     for (const tera of teraExceptions) {
         if (text.toLowerCase().includes(tera)) {
             return tera.charAt(0).toUpperCase() + tera.slice(1);
@@ -96,22 +96,21 @@ export default async function fetchTeamData(url) {
         let name = headerText.includes('(') ? headerText.split('(')[1].split(')')[0].split('@')[0].trim() : headerText.split('@')[0].trim();
         name = fixSpecialChars(name);
 
-        // Adjust names for specific cases
-        // if (name === 'Calyrex-Shadow') name = 'Calyrex-Shadow Rider';
-        // if (name === 'Calyrex-Ice') name = 'Calyrex-Ice Rider';
-        // if (name === 'Urshifu-Rapid-Strike') name = 'Urshifu-Rapid Strike';
-        // if (name === 'Urshifu') name = 'Urshifu-Single Strike';
-
         // Extract Tera Type
         let tera = "Unknown";
         const teraSpan = $$('span').filter((i, el) => $(el).text() === 'Tera Type: ').next('span');
-        if (teraSpan.length) {
-            tera = correctTeraType(teraSpan.text());
+        const teraStellarTest = $$.text().split('\n')[3].trim();
+        if (teraStellarTest.includes("Stellar") || teraStellarTest.includes("stellar")) {
+          tera = "Stellar";
         } else {
-            const teraText = $$.text().splitlines().find(line => line.includes('Tera Type'));
-            if (teraText) {
-                tera = correctTeraType(teraText.split(': ')[1]);
-            }
+          if (teraSpan.length) {
+            tera = correctTeraType(teraSpan.text());
+          } else {
+              const teraText = $$.text().splitlines().find(line => line.includes('Tera Type'));
+              if (teraText) {
+                  tera = correctTeraType(teraText.split(': ')[1]);
+              }
+          }
         }
 
         // Extract Ability
@@ -129,10 +128,6 @@ export default async function fetchTeamData(url) {
         const moves = [];
         const lines = $$.text().split('\n- ');
         lines.shift();
-        // const move1 = lines[lines.length - 6].replace('- ', '').trim()
-        // const move2 = lines[lines.length - 5].replace('- ', '').trim()
-        // const move3 = lines[lines.length - 4].replace('- ', '').trim()
-        // const move4 = lines[lines.length - 3].replace('- ', '').trim()
         lines.forEach((move, i) => {
           move = move.trim();
           if (name === "Zacian-Crowned" || name === "Zamazenta-Crowned") {
@@ -273,7 +268,12 @@ export default async function fetchTeamData(url) {
         const EVs = {"hp": hpEV, "atk": atkEV, "def": defEV, "spa": spaEV, "spd": spdEV, "spe": speEV};
 
         const natureLine = $$.text().split('\n')[5].trim();
-        const nature = natureLine.replace(" Nature", "").trim();
+        var nature;
+        if (natureLine.includes("Nature")) {
+          nature = natureLine.replace(" Nature", "").trim();
+        } else {
+          nature = "Bashful"
+        }
 
         // Create Pokemon object and add it to the team
         const mon = new Pokemon(name, tera, ability, moves, IVs, EVs, nature, item);

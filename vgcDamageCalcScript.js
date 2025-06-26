@@ -157,14 +157,14 @@ while (docName == undefined || docName == "") {
   docName = await input({message:"What do you want to name the calc document?:"});
 }
 
-if (fs.existsSync("generatedDocs\\")) {
+if (fs.existsSync("generatedDocs/")) {
   Packer.toBuffer(doc).then((buffer) => {
-    fs.writeFileSync("generatedDocs\\" + docName + ".docx", buffer);
+    fs.writeFileSync("generatedDocs/" + docName + ".docx", buffer);
   });
 } else {
   fs.mkdirSync("generatedDocs");
   Packer.toBuffer(doc).then((buffer) => {
-    fs.writeFileSync("generatedDocs\\" + docName + ".docx", buffer);
+    fs.writeFileSync("generatedDocs/" + docName + ".docx", buffer);
   });
 }
 
