@@ -1,7 +1,7 @@
 import {calculate, Generations, Pokemon, Move, Field} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
 import { display } from '@smogon/calc/dist/desc.js';
-import { input, select, Separator } from '@inquirer/prompts';
+import { input, select } from '@inquirer/prompts';
 import * as fs from "fs";
 import { Document, Packer, Paragraph, TextRun, UnderlineType } from "docx";
 
