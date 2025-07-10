@@ -1,7 +1,7 @@
 {
   "name": "vgc-damage-calc-generator",
   "version": "0.1.0",
-  "description": "Automatically generate damage calcs by supplying a team paste and either a second team paste or pulling data from Showdown monthly data",
+  "description": "Automatically generate damage calcs by supplying a team paste and a second team paste",
   "type": "module",
   "main": "vgcDamageCalcScript.js",
   "scripts": {
