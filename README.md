@@ -30,7 +30,7 @@ cd VGC-Damage-Calc-Script
 npm install
 ```
 
-
+If you don't have git installed, download the .zip file in the desired location then open up command prompt, cd to the VGC-Damage-Calc-Script and then run npm install.
 
 ## Usage
 
