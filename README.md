@@ -34,10 +34,13 @@ If you don't have git installed, download the .zip file in the desired location 
 
 ## Usage
 
+Open command prompt or the terminal of your choice in the VGC-Damage-Calc-Script folder.
+
 ```node
 node vgcDamageCalcScript.js
 ```
-Then follow the prompts
+Then follow the prompts that appear in the terminal.
+This requires two pokepastes to run.
 
 ## Contributing
 
