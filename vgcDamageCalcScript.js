@@ -1,6 +1,7 @@
 import {calculate, Generations, Pokemon, Move, Field} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
 import { display } from '@smogon/calc/dist/desc.js';
+import { calculateSMSSSV } from '@smogon/calc/dist/mechanics/gen789.js';
 import { input, select } from '@inquirer/prompts';
 import * as fs from "fs";
 import { Document, Packer, Paragraph, TextRun, UnderlineType } from "docx";
@@ -8,6 +9,7 @@ import { Document, Packer, Paragraph, TextRun, UnderlineType } from "docx";
 /* Example pastes:
 https://pokepast.es/53a0c693aa5453e3
 https://pokepast.es/cf23c1115b55728f
+https://pokepast.es/84e4f70d1f81b499 - Terapagos
 */
 
 const userPasteQuestion = await input({message:"Which team are you using? (Pokepaste link):"});
@@ -54,7 +56,7 @@ const atkTera = await select({
       value: "No",
     }
   ],
-  default: "No",
+  default: "Yes",
 });
 
 const defTera = await select({
@@ -69,8 +71,37 @@ const defTera = await select({
       value: "No",
     }
   ],
-  default: "No",
+  default: "Yes",
 });
+
+const fileOutput = await select({
+  message:"What format do you want the damage calcs stored in?",
+  choices: [
+    {
+      name: "docx",
+      value: "docx",
+    },
+    {
+      name: "markdown",
+      value: "mk",
+    }
+  ],
+  default: "docx",
+});
+
+var docName = await input({message:"What do you want to name the calc document? (Naming the document the same as another document will overwrite the original document):"});
+while (docName == undefined || docName == "") {
+  console.log("This is not a valid name. Please enter a valid name for the document.");
+  docName = await input({message:"What do you want to name the calc document?:"});
+}
+
+if (!fs.existsSync("generatedDocs/")) {
+  fs.mkdirSync("generatedDocs");
+}
+
+if(fs.existsSync("generatedDocs/" + docName + ".md")) {
+  fs.writeFileSync("generatedDocs/" + docName + ".md", "");
+}
 
 const gen = Generations.get(9);
 
@@ -84,44 +115,56 @@ userPaste.forEach((userPoke) => {
     var field = new Field(
       { gameType: 'Doubles' }
     );
-    if (!whichPaste.toLowerCase().includes("atk")) {
+    if (whichPaste !== "Attack") {
       damageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, damageDescArray);
-      childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})) // Font size is in half point, so size: 32 = 16 in Word
-      damageDescArray.forEach((calc) => {
-        childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
-      })
-      childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+      if (fileOutput == "docx") {
+        childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
+        damageDescArray.forEach((calc) => {
+          childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
+        })
+        childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+      } else if (fileOutput == "mk") {
+        var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
+        fs.writeFileSync(file, "## " + userPoke.name + " (atk) vs. (def) " + oppPoke.name + "\n");
+        damageDescArray.forEach((calc) => {
+          fs.writeFileSync(file, calc + "  \n");
+        })
+        fs.writeFileSync(file, "\n");
+      }
     }
-    if (!whichPaste.toLowerCase().includes("def")) {
+    if (whichPaste !== "Defend") {
       damageDescArray = moveDescConstructor(gen, oppPoke, userPoke, field, defTera, atkTera, defMoves, damageDescArray);
-      childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})) // Font size is in half point, so size: 32 = 16 in Word
-      damageDescArray.forEach((calc) => {
-        childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
-      })
-      childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+      if (fileOutput == "docx") {
+        childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
+        damageDescArray.forEach((calc) => {
+          childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
+        })
+        childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+      } else if (fileOutput == "mk") {
+        var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
+        fs.writeFileSync(file, "## " + userPoke.name + " (def) vs. (atk) " + oppPoke.name + "\n");
+        damageDescArray.forEach((calc) => {
+          fs.writeFileSync(file, calc + "  \n");
+        })
+        fs.writeFileSync(file, "\n");
+      }
     }
   });
-  var paragraph = new Paragraph(childrenArray);
-  sectionArray.push({children: [paragraph]});
+  if (fileOutput == "docx") {
+    var paragraph = new Paragraph(childrenArray);
+    sectionArray.push({children: [paragraph]});
+  }
 });
 
-const doc = new Document({
-  title: "Test Doc",
-  sections: sectionArray,
-});
-
-var docName = await input({message:"What do you want to name the calc document? (Naming the document the same as another document will overwrite the original document):"});
-while (docName == undefined || docName == "") {
-  console.log("This is not a valid name. Please enter a valid name for the document.");
-  docName = await input({message:"What do you want to name the calc document?:"});
+var doc;
+if (fileOutput == "docx") {
+  doc = new Document({
+    title: "Test Doc",
+    sections: sectionArray,
+  });
 }
 
-if (fs.existsSync("generatedDocs/")) {
-  Packer.toBuffer(doc).then((buffer) => {
-    fs.writeFileSync("generatedDocs/" + docName + ".docx", buffer);
-  });
-} else {
-  fs.mkdirSync("generatedDocs");
+if (fileOutput == "docx") {
   Packer.toBuffer(doc).then((buffer) => {
     fs.writeFileSync("generatedDocs/" + docName + ".docx", buffer);
   });
@@ -161,48 +204,71 @@ function moveDescConstructor(gen, atkPoke, defPoke, field, atkTera, defTera, mov
 function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, defTeraCheck) {
   var atkPokemon;
   var defPokemon;
+  var atkPokeName = atkPoke.name;
+  var atkPokeAbility = atkPoke.ability;
+  var atkPokeItem = atkPoke.item;
+  var defPokeName = defPoke.name;
+  var defPokeAbility = defPoke.ability;
+  var defPokeItem = defPoke.item;
   if (atkTeraCheck == "Yes") {
-    atkPokemon = new Pokemon(gen, atkPoke.name, {
+    if (atkPokeName == "Ogerpon-Hearthflame") {
+      atkPokeAbility = "Embody Aspect (Hearthflame)";
+    } else if (atkPokeName == "Terapagos-Terastal") {
+      atkPokeName = "Terapagos-Stellar";
+      atkPokeAbility = "Teraform Zero";
+    }
+    atkPokemon = new Pokemon(gen, atkPokeName, {
       level: 50,
-      item: atkPoke.item,
+      item: atkPokeItem,
       nature: atkPoke.nature,
-      ability: atkPoke.ability,
+      ability: atkPokeAbility,
       teraType: atkPoke.tera,
       ivs: atkPoke.IVs,
       evs: atkPoke.EVs,
     });
   } else {
-    atkPokemon = new Pokemon(gen, atkPoke.name, {
+    atkPokemon = new Pokemon(gen, atkPokeName, {
       level: 50,
-      item: atkPoke.item,
+      item: atkPokeItem,
       nature: atkPoke.nature,
-      ability: atkPoke.ability,
+      ability: atkPokeAbility,
       ivs: atkPoke.IVs,
       evs: atkPoke.EVs,
     });
   }
   if (defTeraCheck == "Yes") {
-    defPokemon = new Pokemon(gen, defPoke.name, {
+    if (defPokeName == "Ogerpon-Cornerstone") {
+      defPokeAbility = "Embody Aspect (Cornerstone)";
+    } else if (defPokeName == "Ogerpon-Wellspring") {
+      defPokeAbility = "Embody Aspect (Wellspring)";
+    } else if (defPokeName == "Terapagos-Terastal") {
+      defPokeName = "Terapagos-Stellar";
+      defPokeAbility = "Teraform Zero";
+    }
+    defPokemon = new Pokemon(gen, defPokeName, {
       level: 50,
-      item: defPoke.item,
+      item: defPokeItem,
       nature: defPoke.nature,
-      ability: defPoke.ability,
+      ability: defPokeAbility,
       teraType: defPoke.tera,
       ivs: defPoke.IVs,
       evs: defPoke.EVs,
     });
   } else {
-    defPokemon = new Pokemon(gen, defPoke.name, {
+    defPokemon = new Pokemon(gen, defPokeName, {
       level: 50,
-      item: defPoke.item,
+      item: defPokeItem,
       nature: defPoke.nature,
-      ability: defPoke.ability,
+      ability: defPokeAbility,
       ivs: defPoke.IVs,
       evs: defPoke.EVs,
     });
   }
-  const atkMove = new Move(gen, move);
-  const result = calculate(
+  var atkMove = new Move(gen, move, {
+    ability: atkPokeAbility,
+    item: atkPokeItem,
+  });
+  const result = calculateSMSSSV(
     gen,
     atkPokemon,
     defPokemon,

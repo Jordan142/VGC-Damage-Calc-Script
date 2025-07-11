@@ -3,3 +3,4 @@ node_modules/
 
 # Calc docs
 *.docx
+*.md

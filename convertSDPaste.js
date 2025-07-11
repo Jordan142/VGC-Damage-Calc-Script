@@ -67,6 +67,7 @@ const patchMonExceptions = (text) => {
         if (firstSplit.includes(exception)) {
             returnText = `<span class="type-grass">${returnText.replace(exception, exception + "</span>")}`;
             returnText = returnText.replace("-Masterpiece", "").replace("-Artisan", "");
+            returnText = returnText.replace("Terapagos", "Terapagos-Terastal");
             return returnText;
         }
     });
