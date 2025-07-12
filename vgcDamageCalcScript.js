@@ -1,15 +1,15 @@
-import {calculate, Generations, Pokemon, Move, Field} from '@smogon/calc';
+import {Dex} from '@pkmn/dex';
+import {Generations} from '@pkmn/data';
+import {calculate, Pokemon, Move, Field, Result} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
-import { display } from '@smogon/calc/dist/desc.js';
-import { calculateSMSSSV } from '@smogon/calc/dist/mechanics/gen789.js';
 import { input, select } from '@inquirer/prompts';
 import * as fs from "fs";
 import { Document, Packer, Paragraph, TextRun, UnderlineType } from "docx";
 
 /* Example pastes:
-https://pokepast.es/53a0c693aa5453e3
-https://pokepast.es/cf23c1115b55728f
-https://pokepast.es/84e4f70d1f81b499 - Terapagos
+https://pokepast.es/53a0c693aa5453e3 - Zacian Paste
+https://pokepast.es/cf23c1115b55728f - Zam Paste
+https://pokepast.es/a6f455eb0c255c08 - Terapagos/Stellar Tera Paste
 */
 
 const userPasteQuestion = await input({message:"Which team are you using? (Pokepaste link):"});
@@ -103,7 +103,8 @@ if(fs.existsSync("generatedDocs/" + docName + ".md")) {
   fs.writeFileSync("generatedDocs/" + docName + ".md", "");
 }
 
-const gen = Generations.get(9);
+const gens = new Generations(Dex);
+const gen = gens.get(9);
 
 var sectionArray = [];
 userPaste.forEach((userPoke) => {
@@ -115,7 +116,7 @@ userPaste.forEach((userPoke) => {
     var field = new Field(
       { gameType: 'Doubles' }
     );
-    if (whichPaste !== "Attack") {
+    if (whichPaste !== "Defend") {
       damageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, damageDescArray);
       if (fileOutput == "docx") {
         childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
@@ -132,7 +133,7 @@ userPaste.forEach((userPoke) => {
         fs.writeFileSync(file, "\n");
       }
     }
-    if (whichPaste !== "Defend") {
+    if (whichPaste !== "Attack") {
       damageDescArray = moveDescConstructor(gen, oppPoke, userPoke, field, defTera, atkTera, defMoves, damageDescArray);
       if (fileOutput == "docx") {
         childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
@@ -227,6 +228,9 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       evs: atkPoke.EVs,
     });
   } else {
+    if (atkPokeName == "Terapagos-Terastal") {
+      atkPokeAbility = "Tera Shell";
+    }
     atkPokemon = new Pokemon(gen, atkPokeName, {
       level: 50,
       item: atkPokeItem,
@@ -255,6 +259,9 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       evs: defPoke.EVs,
     });
   } else {
+    if (defPokeName == "Terapagos-Terastal") {
+      defPokeAbility = "Tera Shell";
+    }
     defPokemon = new Pokemon(gen, defPokeName, {
       level: 50,
       item: defPokeItem,
@@ -268,7 +275,25 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
     ability: atkPokeAbility,
     item: atkPokeItem,
   });
-  const result = calculateSMSSSV(
+  if (atkTeraCheck == "Yes") {
+    if (atkPoke.tera == "Stellar") {
+      // Required to account for tera Stellar in calcs
+      atkMove = new Move(gen, move, {
+        ability: atkPokeAbility,
+        item: atkPokeItem,
+        isStellarFirstUse: true,
+      });
+      if (move == "Tera Starstorm") {
+          atkMove = new Move(gen, move, {
+          ability: atkPokeAbility,
+          item: atkPokeItem,
+          overrides: {type: "Stellar"}, // Required as default type for Tera Starstorm in Normal
+        });
+      }
+    }
+  }
+
+  var result = calculate(
     gen,
     atkPokemon,
     defPokemon,
@@ -278,7 +303,7 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
 
   if (result["move"]["category"] != "Status") {
     if (result.damage != 0) {
-      const description = display(gen, atkPokemon, defPokemon, atkMove, field, result.damage, result.rawDesc);
+      var description = new Result(gen, atkPokemon, defPokemon, result.move, field, result.damage, result.rawDesc).fullDesc();
       return description;
     } else {
       return atkMove.name + " does no damage!";

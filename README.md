@@ -10,6 +10,7 @@
   - [Installation](#installation)
   - [Usage](#usage)
   - [Contributing](#contributing)
+  - [Special Thanks](#special-thanks)
 
 ## Requirements
 
@@ -46,3 +47,7 @@ This requires two pokepastes to run.
 
 Testing
 - Jamie Chen
+
+## Special Thanks
+
+- Bauerdad for creating PASRS which I modified the TEAMDATAFROMPASTE formula for convertSDPaste.js (and should probably clean up irrelevant code in it)

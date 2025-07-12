@@ -268,6 +268,7 @@ export default async function fetchTeamData(url) {
         const IVs = {"hp": hpIV, "atk": atkIV, "def": defIV, "spa": spaIV, "spd": spdIV, "spe": speIV};
         const EVs = {"hp": hpEV, "atk": atkEV, "def": defEV, "spa": spaEV, "spd": spdEV, "spe": speEV};
 
+        // Extract Nature information, sets to neutral nature if no nature is listed
         const natureLine = $$.text().split('\n')[5].trim();
         var nature;
         if (natureLine.includes("Nature")) {
