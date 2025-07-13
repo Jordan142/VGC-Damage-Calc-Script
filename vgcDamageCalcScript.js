@@ -2,6 +2,7 @@ import {Dex} from '@pkmn/dex';
 import {Generations} from '@pkmn/data';
 import {calculate, Pokemon, Move, Field, Result} from '@smogon/calc';
 import fetchTeamData from './convertSDPaste.js';
+import fieldStatequestionnaire from './fieldState.js';
 import { input, select } from '@inquirer/prompts';
 import * as fs from "fs";
 import { Document, Packer, Paragraph, TextRun, UnderlineType } from "docx";
@@ -74,6 +75,30 @@ const defTera = await select({
   default: "Yes",
 });
 
+const additionalFieldEffects = await select({
+  message:"Do you want to show additional damage calcs for any potential field effects? i.e Weather, Terrain, Screens, etc.",
+  choices: [
+    {
+      name: "Yes",
+      value: "Yes",
+    },
+    {
+      name: "No",
+      value: "No",
+    }
+  ],
+  default: "No",
+});
+
+var fieldArray;
+if (additionalFieldEffects == "Yes") {
+  fieldArray = await fieldStatequestionnaire(userPaste, oppPaste);
+} else {
+  fieldArray = [new Field(
+    { gameType: 'Doubles' }
+  )];
+}
+
 const fileOutput = await select({
   message:"What format do you want the damage calcs stored in?",
   choices: [
@@ -111,45 +136,104 @@ userPaste.forEach((userPoke) => {
   const atkMoves = userPoke.moves
   var childrenArray = {children: []};
   oppPaste.forEach((oppPoke) => {
-    var damageDescArray;
+    var atkDamageDescArray = [];
+    var defDamageDescArray = [];
+    var firstAtkDamageDescArray;
+    var firstDefDamageDescArray;
     const defMoves = oppPoke.moves
-    var field = new Field(
-      { gameType: 'Doubles' }
-    );
-    if (whichPaste !== "Defend") {
-      damageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, damageDescArray);
-      if (fileOutput == "docx") {
-        childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
-        damageDescArray.forEach((calc) => {
-          childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
-        })
-        childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
-      } else if (fileOutput == "mk") {
-        var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
-        fs.writeFileSync(file, "## " + userPoke.name + " (atk) vs. (def) " + oppPoke.name + "\n");
-        damageDescArray.forEach((calc) => {
-          fs.writeFileSync(file, calc + "  \n");
-        })
-        fs.writeFileSync(file, "\n");
+    fieldArray.forEach((field) => {
+      var fieldStatus = "Field Status: ";
+      for (var status in field) {
+        var statusValue = field[status];
+        if (statusValue != false && statusValue != undefined && statusValue != 0 && typeof(statusValue) != "function") {
+          if (status == "attackerSide" || status == "defenderSide") {
+            var sideFieldStatus = "";
+            var i = 0;
+            for (var sideStatus in statusValue) {
+              var sideStatusValue = statusValue[sideStatus];
+              if (sideStatusValue != false && sideStatusValue != undefined && sideStatusValue != 0 && typeof(sideStatusValue) != "function") {
+                sideFieldStatus += sideStatus + ": " + sideStatusValue + ", ";
+                i++;
+              }
+            }
+            if (i > 0) {
+              fieldStatus += status + ": " + sideFieldStatus;
+            }
+          } else {
+            fieldStatus += status + ": " + statusValue + ", ";
+          }
+        }
       }
-    }
-    if (whichPaste !== "Attack") {
-      damageDescArray = moveDescConstructor(gen, oppPoke, userPoke, field, defTera, atkTera, defMoves, damageDescArray);
-      if (fileOutput == "docx") {
-        childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
-        damageDescArray.forEach((calc) => {
-          childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
-        })
-        childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
-      } else if (fileOutput == "mk") {
-        var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
-        fs.writeFileSync(file, "## " + userPoke.name + " (def) vs. (atk) " + oppPoke.name + "\n");
-        damageDescArray.forEach((calc) => {
-          fs.writeFileSync(file, calc + "  \n");
-        })
-        fs.writeFileSync(file, "\n");
+      fieldStatus = fieldStatus.substring(0, fieldStatus.length - 2);
+      if (whichPaste !== "Defend") {
+        atkDamageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, atkDamageDescArray);
+        var newAtkDamageDescArray = [];
+        if (firstAtkDamageDescArray == undefined) {
+          firstAtkDamageDescArray = newAtkDamageDescArray = atkDamageDescArray;
+        } else {
+          atkDamageDescArray.forEach((damage) => {
+            if (!firstAtkDamageDescArray.includes(damage)) {
+              newAtkDamageDescArray.push(damage);
+            }
+          })
+          firstAtkDamageDescArray = firstAtkDamageDescArray.concat(newAtkDamageDescArray);
+        }
+        if (fileOutput == "docx") {
+          if (newAtkDamageDescArray.length > 0) {
+            childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
+            childrenArray.children.push(new TextRun({text: fieldStatus, font: "Aptos", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
+            newAtkDamageDescArray.forEach((calc) => {
+              childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
+            })
+            childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+          }
+        } else if (fileOutput == "mk") {
+          if (newAtkDamageDescArray.length > 0) {
+            var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
+            fs.writeFileSync(file, "## " + userPoke.name + " (atk) vs. (def) " + oppPoke.name + "\n");
+            fs.writeFileSync(file, "### " + fieldStatus + "\n");
+            newAtkDamageDescArray.forEach((calc) => {
+              fs.writeFileSync(file, calc + "  \n");
+            })
+            fs.writeFileSync(file, "\n");
+          }
       }
-    }
+      }
+      if (whichPaste !== "Attack") {
+        defDamageDescArray = moveDescConstructor(gen, oppPoke, userPoke, field, defTera, atkTera, defMoves, defDamageDescArray);
+        var newDefDamageDescArray = [];
+        if (firstDefDamageDescArray == undefined) {
+          firstDefDamageDescArray = newDefDamageDescArray = defDamageDescArray;
+        } else {
+          defDamageDescArray.forEach((damage) => {
+            if (!firstDefDamageDescArray.includes(damage)) {
+              newDefDamageDescArray.push(damage);
+            }
+          })
+          firstDefDamageDescArray = firstDefDamageDescArray.concat(newDefDamageDescArray);
+        }
+        if (fileOutput == "docx") {
+          if (newDefDamageDescArray.length > 0) {
+            childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
+            childrenArray.children.push(new TextRun({text: fieldStatus, font: "Aptos", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
+            newDefDamageDescArray.forEach((calc) => {
+              childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
+            })
+            childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+          }
+        } else if (fileOutput == "mk") {
+          if (newDefDamageDescArray.length > 0) {
+            var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
+            fs.writeFileSync(file, "## " + userPoke.name + " (def) vs. (atk) " + oppPoke.name + "\n");
+            fs.writeFileSync(file, "### " + fieldStatus + "\n");
+            newDefDamageDescArray.forEach((calc) => {
+              fs.writeFileSync(file, calc + "  \n");
+            })
+            fs.writeFileSync(file, "\n");
+          }
+        }
+      }
+    })
   });
   if (fileOutput == "docx") {
     var paragraph = new Paragraph(childrenArray);
