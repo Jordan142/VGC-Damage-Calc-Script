@@ -136,10 +136,10 @@ userPaste.forEach((userPoke) => {
   const atkMoves = userPoke.moves
   var childrenArray = {children: []};
   oppPaste.forEach((oppPoke) => {
-    var atkDamageDescArray = [];
-    var defDamageDescArray = [];
-    var firstAtkDamageDescArray;
-    var firstDefDamageDescArray;
+    var userDamageDescArray = [];
+    var oppDamageDescArray = [];
+    var firstUserDamageDescArray;
+    var firstOppDamageDescArray;
     const defMoves = oppPoke.moves
     fieldArray.forEach((field) => {
       var fieldStatus = "Field Status: ";
@@ -157,7 +157,11 @@ userPaste.forEach((userPoke) => {
               }
             }
             if (i > 0) {
-              fieldStatus += status + ": " + sideFieldStatus;
+              if (status == "attackerSide") {
+                fieldStatus += "User Side: " + sideFieldStatus;
+              } else {
+                fieldStatus += "Opposition Side: " + sideFieldStatus;
+              }
             }
           } else {
             fieldStatus += status + ": " + statusValue + ", ";
@@ -166,33 +170,33 @@ userPaste.forEach((userPoke) => {
       }
       fieldStatus = fieldStatus.substring(0, fieldStatus.length - 2);
       if (whichPaste !== "Defend") {
-        atkDamageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, atkDamageDescArray);
-        var newAtkDamageDescArray = [];
-        if (firstAtkDamageDescArray == undefined) {
-          firstAtkDamageDescArray = newAtkDamageDescArray = atkDamageDescArray;
+        userDamageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, userDamageDescArray);
+        var newUserDamageDescArray = [];
+        if (firstUserDamageDescArray == undefined) {
+          firstUserDamageDescArray = newUserDamageDescArray = userDamageDescArray;
         } else {
-          atkDamageDescArray.forEach((damage) => {
-            if (!firstAtkDamageDescArray.includes(damage)) {
-              newAtkDamageDescArray.push(damage);
+          userDamageDescArray.forEach((damage) => {
+            if (!firstUserDamageDescArray.includes(damage)) {
+              newUserDamageDescArray.push(damage);
             }
           })
-          firstAtkDamageDescArray = firstAtkDamageDescArray.concat(newAtkDamageDescArray);
+          firstUserDamageDescArray = firstUserDamageDescArray.concat(newUserDamageDescArray);
         }
         if (fileOutput == "docx") {
-          if (newAtkDamageDescArray.length > 0) {
+          if (newUserDamageDescArray.length > 0) {
             childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
             childrenArray.children.push(new TextRun({text: fieldStatus, font: "Aptos", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
-            newAtkDamageDescArray.forEach((calc) => {
+            newUserDamageDescArray.forEach((calc) => {
               childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
             })
             childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
           }
         } else if (fileOutput == "mk") {
-          if (newAtkDamageDescArray.length > 0) {
+          if (newUserDamageDescArray.length > 0) {
             var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
             fs.writeFileSync(file, "## " + userPoke.name + " (atk) vs. (def) " + oppPoke.name + "\n");
             fs.writeFileSync(file, "### " + fieldStatus + "\n");
-            newAtkDamageDescArray.forEach((calc) => {
+            newUserDamageDescArray.forEach((calc) => {
               fs.writeFileSync(file, calc + "  \n");
             })
             fs.writeFileSync(file, "\n");
@@ -200,33 +204,44 @@ userPaste.forEach((userPoke) => {
       }
       }
       if (whichPaste !== "Attack") {
-        defDamageDescArray = moveDescConstructor(gen, oppPoke, userPoke, field, defTera, atkTera, defMoves, defDamageDescArray);
-        var newDefDamageDescArray = [];
-        if (firstDefDamageDescArray == undefined) {
-          firstDefDamageDescArray = newDefDamageDescArray = defDamageDescArray;
+        // Updates the field so that the user Side attributes are on the defensive calcs and opp Side attributes are on the offensive calcs
+        var userSide = field["attackerSide"];
+        var oppSide = field["defenderSide"];
+        field["attackerSide"] = oppSide;
+        field["defenderSide"] = userSide; 
+
+        oppDamageDescArray = moveDescConstructor(gen, oppPoke, userPoke, field, defTera, atkTera, defMoves, oppDamageDescArray);
+
+        // Reverts the change back because it doesn't do that by itself when testing
+        field["attackerSide"] = userSide;
+        field["defenderSide"] = oppSide;
+
+        var newOppDamageDescArray = [];
+        if (firstOppDamageDescArray == undefined) {
+          firstOppDamageDescArray = newOppDamageDescArray = oppDamageDescArray;
         } else {
-          defDamageDescArray.forEach((damage) => {
-            if (!firstDefDamageDescArray.includes(damage)) {
-              newDefDamageDescArray.push(damage);
+          oppDamageDescArray.forEach((damage) => {
+            if (!firstOppDamageDescArray.includes(damage)) {
+              newOppDamageDescArray.push(damage);
             }
           })
-          firstDefDamageDescArray = firstDefDamageDescArray.concat(newDefDamageDescArray);
+          firstOppDamageDescArray = firstOppDamageDescArray.concat(newOppDamageDescArray);
         }
         if (fileOutput == "docx") {
-          if (newDefDamageDescArray.length > 0) {
+          if (newOppDamageDescArray.length > 0) {
             childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
             childrenArray.children.push(new TextRun({text: fieldStatus, font: "Aptos", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
-            newDefDamageDescArray.forEach((calc) => {
+            newOppDamageDescArray.forEach((calc) => {
               childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
             })
             childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
           }
         } else if (fileOutput == "mk") {
-          if (newDefDamageDescArray.length > 0) {
+          if (newOppDamageDescArray.length > 0) {
             var file = fs.openSync("generatedDocs/" + docName + ".md", "a");
             fs.writeFileSync(file, "## " + userPoke.name + " (def) vs. (atk) " + oppPoke.name + "\n");
             fs.writeFileSync(file, "### " + fieldStatus + "\n");
-            newDefDamageDescArray.forEach((calc) => {
+            newOppDamageDescArray.forEach((calc) => {
               fs.writeFileSync(file, calc + "  \n");
             })
             fs.writeFileSync(file, "\n");
@@ -310,6 +325,7 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       teraType: atkPoke.tera,
       ivs: atkPoke.IVs,
       evs: atkPoke.EVs,
+      boostedStat: "auto",
     });
   } else {
     if (atkPokeName == "Terapagos-Terastal") {
@@ -322,6 +338,7 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       ability: atkPokeAbility,
       ivs: atkPoke.IVs,
       evs: atkPoke.EVs,
+      boostedStat: "auto",
     });
   }
   if (defTeraCheck == "Yes") {
@@ -341,6 +358,7 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       teraType: defPoke.tera,
       ivs: defPoke.IVs,
       evs: defPoke.EVs,
+      boostedStat: "auto",
     });
   } else {
     if (defPokeName == "Terapagos-Terastal") {
@@ -353,6 +371,7 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
       ability: defPokeAbility,
       ivs: defPoke.IVs,
       evs: defPoke.EVs,
+      boostedStat: "auto",
     });
   }
   var atkMove = new Move(gen, move, {
