@@ -184,12 +184,12 @@ userPaste.forEach((userPoke) => {
         }
         if (fileOutput == "docx") {
           if (newUserDamageDescArray.length > 0) {
-            childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
-            childrenArray.children.push(new TextRun({text: fieldStatus, font: "Aptos", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
+            childrenArray.children.push(new TextRun({text: userPoke.name + " (atk) vs. (def) " + oppPoke.name, font: "Calibri", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
+            childrenArray.children.push(new TextRun({text: fieldStatus, font: "Calibri", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
             newUserDamageDescArray.forEach((calc) => {
-              childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
+              childrenArray.children.push(new TextRun({text: calc, font: "Calibri", size: 24, break: 1}));
             })
-            childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+            childrenArray.children.push(new TextRun({font: "Calibri", size: 24, break: 1}));
           }
         } else if (fileOutput == "mk") {
           if (newUserDamageDescArray.length > 0) {
@@ -229,12 +229,12 @@ userPaste.forEach((userPoke) => {
         }
         if (fileOutput == "docx") {
           if (newOppDamageDescArray.length > 0) {
-            childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Aptos", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
-            childrenArray.children.push(new TextRun({text: fieldStatus, font: "Aptos", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
+            childrenArray.children.push(new TextRun({text: userPoke.name + " (def) vs. (atk) " + oppPoke.name, font: "Calibri", size: 32, bold: true, underline: {type: UnderlineType.THICK}, break: 1})); // Font size is in half point, so size: 32 = 16 in Word
+            childrenArray.children.push(new TextRun({text: fieldStatus, font: "Calibri", size: 28, bold: true, underline: {type: UnderlineType.THICK}, break: 1}));
             newOppDamageDescArray.forEach((calc) => {
-              childrenArray.children.push(new TextRun({text: calc, font: "Aptos", size: 24, break: 1}));
+              childrenArray.children.push(new TextRun({text: calc, font: "Calibri", size: 24, break: 1}));
             })
-            childrenArray.children.push(new TextRun({font: "Aptos", size: 24, break: 1}));
+            childrenArray.children.push(new TextRun({font: "Calibri", size: 24, break: 1}));
           }
         } else if (fileOutput == "mk") {
           if (newOppDamageDescArray.length > 0) {
