@@ -274,30 +274,48 @@ function moveDescConstructor(gen, atkPoke, defPoke, field, atkTera, defTera, mov
   damageDescArray = [];
   moves.forEach((move) => {
     var moveDesc;
+    var moveDescArray = [];
 
     moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "No", "No"); // Standard calc
     if (moveDesc != undefined) {
-      damageDescArray.push(moveDesc);
+      moveDescArray.push(moveDesc);
     }
     if (atkTera == "Yes") {
       moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "Yes", "No") // Atk tera
       if (moveDesc != undefined) {
-        damageDescArray.push(moveDesc);
+        moveDescArray.push(moveDesc);
       }
     }
     if (defTera == "Yes") {
       moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "No", "Yes"); // Def tera
       if (moveDesc != undefined) {
-        damageDescArray.push(moveDesc);
+        moveDescArray.push(moveDesc);
       }
     }
     if (atkTera == "Yes" && defTera == "Yes") {
       moveDesc = battleConstructor(gen, atkPoke, defPoke, move, field, "Yes", "Yes") // Atk & Def tera
       if (moveDesc != undefined) {
-        damageDescArray.push(moveDesc);
+        moveDescArray.push(moveDesc);
       }
     }
+
+    if (moveDescArray.length > 1) {
+      var newMoveDescArray = [];
+      var descArray = [];
+
+      moveDescArray.forEach((damageDesc) => {
+        var damageAmount = damageDesc.split(":")[1]; // Should only be the amount of damage with any terrain recovery
+        if (!descArray.includes(damageAmount)) {
+          descArray.push(damageAmount);
+          newMoveDescArray.push(damageDesc);
+        }
+      })
+      damageDescArray = damageDescArray.concat(newMoveDescArray);
+    } else {
+      damageDescArray = damageDescArray.concat(moveDescArray);
+    }
   });
+
   return damageDescArray;
 }
 
