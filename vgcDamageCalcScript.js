@@ -141,6 +141,7 @@ userPaste.forEach((userPoke) => {
     var firstUserDamageDescArray;
     var firstOppDamageDescArray;
     const defMoves = oppPoke.moves
+    // Iterate's through the field conditions
     fieldArray.forEach((field) => {
       var fieldStatus = "Field Status: ";
       for (var status in field) {
@@ -168,18 +169,22 @@ userPaste.forEach((userPoke) => {
           }
         }
       }
-      fieldStatus = fieldStatus.substring(0, fieldStatus.length - 2);
+      fieldStatus = fieldStatus.substring(0, fieldStatus.length - 2); // removes the ", " from the end of the last field status
+
+      // Creates offensive calcs
       if (whichPaste !== "Defend") {
         userDamageDescArray = moveDescConstructor(gen, userPoke, oppPoke, field, atkTera, defTera, atkMoves, userDamageDescArray);
         var newUserDamageDescArray = [];
         if (firstUserDamageDescArray == undefined) {
           firstUserDamageDescArray = newUserDamageDescArray = userDamageDescArray;
         } else {
+          // Adds damage calcs that have not shown up before
           userDamageDescArray.forEach((damage) => {
             if (!firstUserDamageDescArray.includes(damage)) {
               newUserDamageDescArray.push(damage);
             }
           })
+          // Adds the new calcs to the comparison list
           firstUserDamageDescArray = firstUserDamageDescArray.concat(newUserDamageDescArray);
         }
         if (fileOutput == "docx") {
@@ -201,8 +206,9 @@ userPaste.forEach((userPoke) => {
             })
             fs.writeFileSync(file, "\n");
           }
+        }
       }
-      }
+      // Creates defensive calcs
       if (whichPaste !== "Attack") {
         // Updates the field so that the user Side attributes are on the defensive calcs and opp Side attributes are on the offensive calcs
         var userSide = field["attackerSide"];
@@ -220,11 +226,13 @@ userPaste.forEach((userPoke) => {
         if (firstOppDamageDescArray == undefined) {
           firstOppDamageDescArray = newOppDamageDescArray = oppDamageDescArray;
         } else {
+          // Adds damage calcs that have not shown up before
           oppDamageDescArray.forEach((damage) => {
             if (!firstOppDamageDescArray.includes(damage)) {
               newOppDamageDescArray.push(damage);
             }
           })
+          // Adds the new calcs to the comparison list
           firstOppDamageDescArray = firstOppDamageDescArray.concat(newOppDamageDescArray);
         }
         if (fileOutput == "docx") {
@@ -299,6 +307,7 @@ function moveDescConstructor(gen, atkPoke, defPoke, field, atkTera, defTera, mov
       }
     }
 
+    // Removes damage descriptions when tera doesn't make difference to damage output
     if (moveDescArray.length > 1) {
       var newMoveDescArray = [];
       var descArray = [];
@@ -424,7 +433,15 @@ function battleConstructor(gen, atkPoke, defPoke, move, field, atkTeraCheck, def
 
   if (result["move"]["category"] != "Status") {
     if (result.damage != 0) {
-      var description = new Result(gen, atkPokemon, defPokemon, result.move, field, result.damage, result.rawDesc).fullDesc();
+      var resultBase = new Result(gen, atkPokemon, defPokemon, result.move, field, result.damage, result.rawDesc);
+      var description = resultBase.desc();
+      var c = resultBase.moveDesc();
+      var e = resultBase.recoil();
+      var f = resultBase.recovery();
+      if (e.text != "" || f.text != "") {
+        var damageRange = c.split(" (")[0];
+        description = description.replace(damageRange, c);
+      }
       return description;
     } else {
       return atkMove.name + " does no damage!";
