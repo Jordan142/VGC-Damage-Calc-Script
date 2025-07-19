@@ -4,3 +4,9 @@ node_modules/
 # Calc docs
 *.docx
 *.md
+
+# binary files
+binaries/
+
+# vscode
+.vscode/
