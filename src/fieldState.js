@@ -41,7 +41,7 @@ export default async function fieldStatequestionnaire(userPaste, oppPaste) {
         choices: [
             { name: 'None', value: undefined, checked: true },
             { name: 'Electric', value: 'Electric' },
-            { name: 'Grasssy', value: 'Grassy' },
+            { name: 'Grassy', value: 'Grassy' },
             { name: 'Misty', value: 'Misty' },
             { name: 'Psychic', value: 'Pyschic' },
         ],
